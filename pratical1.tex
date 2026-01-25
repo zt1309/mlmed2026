@@ -21,7 +21,7 @@
 \maketitle
 
 \begin{abstract}
-Electrocardiogram (ECG) interpretation is a fundamental task in clinical cardiology for detecting cardiovascular diseases. This paper proposes a robust deep learning approach combining Convolutional Neural Networks (CNN) and Long Short-Term Memory (LSTM) networks to automate the classification of heartbeats into Normal and Abnormal categories. Utilizing the PTB Diagnostic ECG database, the proposed model achieves an accuracy of 97\%. Our analysis demonstrates that the fusion of spatial feature extraction from CNNs and temporal dependency modeling from LSTMs significantly enhances classification performance, particularly in terms of sensitivity to pathological signals.
+Electrocardiogram (ECG) analysis is a fundamental task in clinical cardiology for detecting cardiovascular diseases. In this practical study, we used two CNN models in combination with LSTM to classify normal and abnormal ECGs. The final results showed a 97\% accuracy rate, significantly improving the classification of normal and abnormal groups in the problem.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -29,15 +29,18 @@ ECG Classification, CNN-LSTM, Deep Learning, PTB Diagnostic Database, Signal Pro
 \end{IEEEkeywords}
 
 \section{Introduction}
-Cardiovascular diseases (CVDs) remain the leading cause of mortality globally, accounting for nearly 17.9 million deaths annually. The Electrocardiogram (ECG) is a non-invasive medical tool that records the electrical activity of the heart, providing critical insights into cardiac health. However, manual interpretation of long-term ECG recordings is labor-intensive and susceptible to human error, necessitating the development of automated, high-precision diagnostic systems.
+Cardiovascular disease is one of the most dangerous diseases, posing a threat in many places. Electrocardiograms (ECGs) are a non-invasive medical tool that records the electrical activity of the heart, providing crucial information about cardiovascular health. However, manually interpreting long-term ECG recordings is labor-intensive and prone to human error; therefore, the development of automated, highly accurate diagnostic methods is necessary.
 
-Traditional machine learning methods often rely on manual feature engineering. Recently, Deep Learning (DL) has emerged as a superior alternative. Specifically:
+As we know, many traditional machine learning methods exist to address this issue. Here, I would like to propose a solution using Deep Learning.
+
+
 \begin{itemize}
-    \item \textbf{CNNs} excel at capturing local morphological features (shape, amplitude, and slopes) of the ECG signal.
-    \item \textbf{LSTM} networks are capable of learning long-term temporal dependencies, which are crucial given the sequential nature of cardiac cycles.
+    \item \textbf{Convolutional Neural Networks} help learn the basic features of the data, in this case, the ECG signal.
+    \item \textbf{Long Short-Term Memory networks (LSTMs)} are capable of learning long-term time dependencies, which is important due to the sequential nature of the cardiac cycle.
 \end{itemize}
 
-In this report for Practical Work 1, I implement a hybrid CNN-LSTM architecture. The primary contributions include a detailed exploratory data analysis (EDA) of the PTB dataset, the design of a specialized neural network for 1D signals, and an evaluation using medical-grade metrics including the Confusion Matrix and PCA-based feature visualization.
+
+Now we will proceed to explore the provided data. I want to visualize the data using 1D images and employ the PCA algorithm to create a visual representation that allows the reader to understand the data in 3D space.
 
 \section{Dataset and Exploratory Data Analysis}
 \subsection{Dataset Description}
@@ -58,7 +61,7 @@ Initial data exploration reveals a significant class imbalance. As shown in Fig.
 \end{figure}
 
 \subsection{ECG Morphology Visualization}
-Each sample represents a single cardiac cycle. Fig. 2 illustrates the standard components of an ECG waveform: the P-wave (atrial depolarization), the QRS complex (ventricular depolarization), and the T-wave (ventricular repolarization).
+Each pattern represents a cardiac cycle. Figure 2 illustrates the standard components of an ECG waveform: such as the P wave (atrial depolarization), the QRS complex (ventricular depolarization), and the T wave (ventricular repolarization). These are all important points for the reader to grasp and understand in detail.
 
 \begin{figure}[h]
     \centering
@@ -85,11 +88,11 @@ As described in, our model combines the strengths of both architectures:
 
 \section{Experimental Results}
 \subsection{Training Performance}
-The model was trained using the Adam optimizer with a learning rate of 0.0005. Fig. 3 displays the convergence, showing high validation accuracy by epoch 16.
+The model I chose uses Adam's algorithm for the optimization step, like many other problems. The learning rate I selected is around 0.00005, and my model is slightly overfitting due to the data being too well normalized.
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.9\linewidth]{16.3.png}
+    \includegraphics[width=0.9\linewidth]{16.4.png}
     \caption{CNN + LSTM Training Performance curves.}
     \label{fig:training}
 \end{figure}
@@ -99,14 +102,14 @@ The model achieved an accuracy of 97\%. The Confusion Matrix in Fig. 4 highlight
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.85\linewidth]{16.4.png}
+    \includegraphics[width=0.85\linewidth]{16.5.png}
     \caption{Confusion Matrix on the test set.}
     \label{fig:cm}
 \end{figure}
 
 \section{In-depth Analysis}
 \subsection{Performance Metrics Analysis}
-To provide a comprehensive evaluation, we calculate precision, recall, and F1-score for both classes. As shown in Table I, the model maintains a high F1-score across both categories.
+To provide an overall assessment, I relied on accuracy, recall, and F1 scores for both classes. As shown in Table 1, the model maintained high F1 scores across both categories.
 
 \begin{table}[h]
 \centering
@@ -127,12 +130,12 @@ We applied 3D Principal Component Analysis (PCA) to project the high-dimensional
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.9\linewidth]{16.5.png}
+    \includegraphics[width=0.9\linewidth]{16.3.png}
     \caption{3D PCA visualization of ECG signals showing distinct clusters.}
     \label{fig:pca}
 \end{figure}
 
-As shown in Fig. 5, the "Normal" signals (blue) and "Abnormal" signals (orange) occupy different regions of the feature space. While there is some overlap at the boundary, the majority of points are linearly separable. This confirms that the CNN-LSTM layers effectively reduced the raw noise and extracted the intrinsic biological features required for accurate classification.
+In Figure 5, normal and abnormal signals occupy different regions in the feature space. Overall, they appear to overlap. This confirms that the CNN-LSTM layers effectively minimized gross noise and extracted the intrinsic biological features necessary for accurate classification.
 
 \section{Discussion: Comparison with Original Paper}
 Our results show strong alignment with the findings in the original paper (1805.00794).
