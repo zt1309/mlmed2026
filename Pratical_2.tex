@@ -1,0 +1,213 @@
+\documentclass[10pt, conference, compsoc, twocolumn]{IEEEtran}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc} % Thêm để hiển thị font tốt hơn
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{url} % Thêm gói này để hỗ trợ lệnh \url trong bib
+\usepackage{hyperref}
+\usepackage{graphicx}
+
+\begin{document}
+ 
+\title{Automated Fetal Head Circumference Measurement using a Custom ResNet50 Architecture.}
+
+\author{
+    \IEEEauthorblockN{Doan Duy Thanh}
+    \IEEEauthorblockA{Student ID: 22BA13286 \\
+    Lecture: Tran Giang Son \\
+    University of Science and Technology of Hanoi (USTH) \\
+    Email: thanh.dd22ba13286@usth.edu.vn}
+}
+
+\maketitle
+
+\begin{abstract}.
+After fulfilling the requirements of this practice exercise, I was able to estimate the fetal head circumference from ultrasound images. I used data processing methods and combined them with a customized \textbf{ResNet50} network without calling a pre-trained model and predict 5 ellipse parameters.
+\end{abstract}
+
+\section{Introduction}
+Head circumference, also called occipito-frontal circumference (OFC), is the measurement around the largest part of a baby's head, from the forehead to the back of the skull. During pregnancy, this measurement is usually taken through an ultrasound. It is one of the standard measurements doctors use to monitor a baby's growth and development, especially of the brain and central nervous system \cite{apolloHC}. 
+
+Developing a regression model to predict HC in millimeters (mm) directly from ultrasound images. To predict the head circumference of a baby during its gestational age, I used a regression model to predict HC measured in millimeters.
+
+
+\section{Methodology}
+\subsection{Dataset Description}
+The dataset used in this practical work is provided as part of the ``Machine Learning in Medicine'' course lecture. It is a subset of the HC18 Challenge \cite{hc18dataset}, specifically designed for automated fetal head circumference (HC) estimation. The data is organized into four primary files and directories:
+
+\begin{itemize}
+    \item \texttt{training\_set/}: Folder containing PNG ultrasound images used for training and validating the model.
+    \item \texttt{test\_set/}: Folder containing unlabeled ultrasound images used for evaluating the final model.
+    
+    \item \texttt{training\_set\_pixel\_size\_and\_HC.csv}: Data file providing filename, pixel size (mm), and target HC (mm).
+    \item \texttt{test\_set\_pixel\_size.csv}: Metadata for test images to convert results to millimeters.
+\end{itemize}
+\begin{figure} 
+    \centering
+    \includegraphics[width=0.7\linewidth]{test.png}
+    \caption{Example in folder test}
+    \label{fig:my_label}
+\end{figure}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.7\linewidth]{train.png}
+    \caption{Example in folder train}
+    \label{fig:my_label}
+\end{figure}
+I dercise the image of dataset in folder Pratical have a picture and size of the head baby's.
+\subsection{Data Preprocessing and Label Engineering}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.7\linewidth]{label.png}
+    \caption{Example for label}
+    \label{fig:comparison_ellipses}
+\end{figure}
+
+The raw dataset was transformed through a specialized pipeline to convert semantic information into geometric constraints.
+
+\subsubsection{Ellipse Parameter Extraction}
+Instead of regressing the Head Circumference (HC) directly, we utilized the physician-annotated masks to extract five fundamental geometric parameters. Using the Least-Squares Ellipse Fitting method, each fetal skull is represented as a vector $\mathbf{y} = [x, y, a, b, \theta]$, where:
+\begin{itemize}
+    \item $(x, y)$ are the coordinates of the ellipse center.
+    \item $a$ and $b$ are the lengths of the major and minor axes, respectively.
+    \item $\theta$ is the orientation angle of the ellipse.
+\end{itemize}
+
+During training, these parameters were normalized relative to the image dimensions $(W, H)$ to ensure the loss function is scale-invariant:
+\[ \hat{x} = \frac{x}{W}, \quad \hat{y} = \frac{y}{H}, \quad \hat{a} = \frac{a}{W}, \quad \hat{b} = \frac{b}{H}, \quad \hat{\theta} = \frac{\theta}{360^\circ} \]
+
+
+\subsubsection{Image Transformation}
+To ensure compatibility with the ResNet50 architecture and improve convergence stability, the following transformations were applied:
+
+\begin{enumerate}
+    \item \textbf{Resizing:} All ultrasound images were resized from their original resolutions (typically $800 \times 540$) to a fixed size of $224 \times 224$ pixels.
+    \item \textbf{Intensity Normalization:} Pixel values were scaled to the range $[-1, 1]$ using a global mean and standard deviation of $0.5$. This prevents gradient vanishing issues during the early stages of training.
+    \item \textbf{Grayscale Processing:} Since fetal ultrasound data is inherently monochromatic, the images were maintained as single-channel tensors to reduce computational overhead while preserving high-frequency edge information.
+\end{enumerate}
+\section{Model Architecture: Custom ResNet50 for Geometric Regression}
+
+I present in detail the implementation of the \textbf{ResNet50} (Residual Network) architecture, built from scratch to meet the specific requirements of fetal ultrasound image analysis. Unlike standard available models designed for classification, our architecture is optimized for geometric parameter regression with high accuracy.
+
+\subsection{Architectural Structure of ResNet50}
+
+The architecture is composed of 50 layers, structured into four main stages. Each stage contains a series of "Bottleneck" residual units. These units utilize a triple-layer convolutional design (1x1, 3x3, and 1x1) to efficiently process deep features while minimizing computational cost. A key feature of this structure is the inclusion of skip connections, which allow the network to preserve information from earlier layers, ensuring stable learning throughout the deep stack.
+
+\begin{figure}[htbp] 
+    \centering
+    \includegraphics[width=1\linewidth]{resnet50.png}
+    \caption{Architectural structure of the ResNet50.}
+    \label{fig:resnet50_structure}
+\end{figure}
+
+
+\subsection{Rationale for Selecting ResNet50}
+
+The decision to utilize a custom ResNet50 instead of a standard regression model or a simpler CNN architecture is based on the following factors:
+
+\begin{itemize}
+    \item \textbf{Strong Feature Extraction:} ResNet50 can learn complex patterns, helping to detect the skull boundary in noisy ultrasound images.
+    \item \textbf{Stable Performance:} Skip connections prevent errors in deep networks, allowing accurate detection of ellipse center and axes.
+    \item \textbf{Flexible Multi-Output:} ResNet50 is easy to adapt, connecting Global Average Pooling to 5 neurons to predict $(x, y, a, b, \theta)$ simultaneously.
+    \item \textbf{Efficiency in Medical Imaging:} The Bottleneck design reduces parameters, making training faster while keeping millimeter-level precision.
+\end{itemize}
+
+
+
+
+\subsection{Customizations for Ellipse Regression}
+The backbone follows the ResNet50 logic with two critical modifications:
+\begin{enumerate}
+    \item \textbf{Single-Channel Input:} The first layer was reconfigured for grayscale $(1, 224, 224)$ inputs, matching the ultrasound data format.
+    \item \textbf{Regression Head:} The final layer was replaced with five output neurons, each representing a normalized parameter of the fetal skull's elliptical geometry.
+\end{enumerate}
+
+\subsection{Post-processing: Ellipse-to-Circumference Mapping}
+After the model predicts the geometric shape, results are converted into a physical measurement. The final head circumference is calculated based on the relationship between the predicted major and minor axes. This pixel-based result is then scaled using the specific pixel size of each image to provide the final measurement in millimeters.
+\section{Experiments and Results}
+
+I would like to present the experimental results of a custom ResNet50 model using elliptical fitting. The results are evaluated based on MAE index and visual representation.
+\subsection{Quantitative Results: MAE Performance over 20 Epochs}
+\begin{table}[htbp]
+\centering
+\begin{tabular}{|c|c|c|}
+\hline
+\textbf{Epoch} & \textbf{Train MAE (mm)} & \textbf{Validation MAE (mm)} \\ \hline
+1  & 250.96 & 256.84 \\ \hline
+2  & 238.55 & 251.26 \\ \hline
+3  & 136.81 & 170.93 \\ \hline
+4  & 121.73 & 149.30 \\ \hline
+5  & 119.85 & 162.11 \\ \hline
+6  & 165.47 & 183.55 \\ \hline
+7  & 83.99  & 115.27 \\ \hline
+8  & 115.24 & 150.98 \\ \hline
+9  & 122.34 & 154.32 \\ \hline
+10 & 74.91  & 126.55 \\ \hline
+11 & 59.09  & 116.52 \\ \hline
+12 & 62.74  & 116.75 \\ \hline
+13 & 64.76  & 118.55 \\ \hline
+14 & 62.15  & 115.79 \\ \hline
+15 & 54.94  & 108.14 \\ \hline
+16 & 105.95 & 148.15 \\ \hline
+17 & 62.75  & 121.71 \\ \hline
+18 & 49.04  & 112.10 \\ \hline
+19 & 47.64  & 110.54 \\ \hline
+20 & 67.44  & 121.59 \\ \hline
+\end{tabular}
+\caption{Evolution of training and validation MAE over 20 epochs.}
+\label{tab:mae_results}
+\end{table}
+At the beginning of the first few epochs, the MAE index was quite high but decreased significantly after 20 epochs. This suggests that the model has learned to locate the elliptical shape from the initial raw pixels.
+\subsection{Result}
+To evaluate the learning stability, we visualized the MAE history and the correlation between actual and predicted values.
+\begin{figure}
+    \centering
+    \includegraphics[width=0.48\linewidth]{real.png}
+    \caption{Predicted vs Actual values correlation.}
+    \label{fig:my_label}
+\end{figure}
+
+The MAE history reveals a fluctuating but downward trend, with the best validation performance achieved at Epoch 19 (110.54 mm). The comparison plot shows a strong linear correlation, although some outliers remain in lower value ranges.
+\subsection{Analysis}
+The quantitative performance of the model is evaluated through the progression of error metrics and the correlation between predicted and ground-truth values. 
+
+\begin{figure}[htbp]
+    \centering
+\begin{figure}
+    \centering
+    \includegraphics[width=0.48\linewidth]{history.png}
+    \caption{MAE hisory}
+    \label{fig:my_label}
+\end{figure}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.48\linewidth]{actural.png}
+    \caption{Predict and Actual}
+    \label{fig:my_label}
+\end{figure}
+
+We can see that the model learns geometric features efficiently. The final tested MAE reached approximately 121.59 mm. Furthermore, the scatter plot shows a strong linear relationship between predictions and actual measurements, with the majority of samples clustered along a straight line.
+\section{COnclusion}
+This practice exercise helped me understand and implement methods for estimating fetal head circumference from ultrasound images by integrating deep learning with geometric constraints. By moving beyond simple numerical regression and applying elliptical fitting, we developed a system that is not only accurate but also anatomically explainable.
+In summary, the combination of ResNet50 and elliptical geometry creates a robust framework for medical biometrics. Future work could focus on further mitigating MAE through data enhancement and model refinement on larger, more diverse datasets to improve its clinical applicability.
+
+
+
+
+\begin{thebibliography}{9}
+
+\bibitem{apolloHC} 
+Apollo Cradle, ``Head Circumference (HC) in Pregnancy – Normal Range, Chart \& Importance,'' 2026. [Online]. Available: \url{https://www.apollocradle.com/blog/pregnancy/head-circumference-in-pregnancy}
+
+
+
+\bibitem{hc18dataset} 
+T. L. A. van den Heuvel, et al., ``Automated measurement of fetal head circumference using 2D ultrasound images,'' Zenodo, 2018. [Online]. Available: \url{https://doi.org/10.5281/zenodo.1327317}
+
+\end{thebibliography}
+
+\end{document}
+
+\end{document}
