@@ -1,0 +1,117 @@
+\documentclass[a4paper, 10pt, twocolumn]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath, amssymb}
+\usepackage{graphicx}
+\usepackage[margin=2cm]{geometry}
+\usepackage{hyperref}
+\usepackage{float}
+\usepackage{booktabs} 
+
+
+\title{\textbf{Segmentation of COVID-19 Lesions in Chest X-ray Images using the U-Net Deep Learning Model}}
+
+\author{
+    Doan Duy Thanh \\
+    Student ID: 22BA13286 \\
+    Lecturer: Tran Giang Son \\
+    University of Science and Technology of Hanoi (USTH) \\
+    Email: thanh.dd22ba13286@usth.edu.vn
+}
+
+
+\begin{document}
+
+\maketitle 
+
+\begin{abstract}
+This practical exercise focuses on medical image segmentation to automatically identify infected areas in chest X-rays of COVID-19 patients. We use the U-Net architecture to perform pixel-level segmentation on the COVID-QU-Ex dataset. Experimental results show that the model achieves stable performance, significantly assisting in the quantification of lung damage.
+\end{abstract}
+
+\section{Introduction}
+Coronavirus disease 2019 (COVID-19) pandemic has posed a major public health crisis all over the world. The role of chest imaging, especially computed tomography (CT), has evolved during the pandemic paralleling the accumulation of scientific evidence. In the early stage of the pandemic, the performance of chest imaging for COVID-19 has widely been debated especially in the context of comparison to real-time reverse transcription polymerase chain reaction.\cite{pmc_imaging} 
+Using machine learning technology, U-Net segments the lungs according to patterns to display in 2D images, assisting doctors in diagnosis.
+
+
+
+\section{Methodology}
+\subsection{Dataset}
+The data provided in the practical section of the course, the COVID-QU-Ex dataset\cite{covid_qu_ex}, includes original X-ray images and corresponding real-world infected masks that have been collected and labeled.
+\begin{figure} [H]
+    \centering
+    \includegraphics[width=0.78\linewidth]{images/output.png}
+    \caption{Example of dataset in Lung segment folder}
+    \label{fig:placeholder}
+\end{figure}
+
+\subsection{U-Net Architecture}
+U-Net is a kind of neural network mainly used for image segmentation which means dividing an image into different parts to identify specific objects for example separating a tumor from healthy tissue in a medical scan. The name “U-Net” comes from the shape of its architecture which looks like the letter “U” when drawn. It is widely used in medical imaging because it performs well even with a small amount of labeled data. \cite{geeksforgeeks_unet}
+
+\begin{figure} [H]
+    \centering
+    \includegraphics[width=0.69\linewidth]{heheu.png}
+    \caption{U-net architecture}
+    \label{fig:placeholder}
+\end{figure}
+
+
+\section{Experiments and Results}
+\subsection{Preprocessing}
+Since the dataset consists of grayscale images, we standardized the input size to $256 \times 256$ pixels to align with the U-Net architecture. The pixel intensities were normalized to the range $[0, 1]$ by scaling the original values by a factor of $1/255.0$. This preprocessing step facilitates faster gradient descent and ensures stable convergence during the training phase.
+\begin{figure}
+    \centering
+    \includegraphics[width=0.69\linewidth]{images/after resizre.png}
+    \caption{After preprocessing}
+    \label{fig:placeholder}
+\end{figure}
+
+\subsection{Quantitative Results}
+Because i was build U-net end to end so trained for 5 epochs, and the performance was recorded after each iteration. As shown in the training history, the model achieved rapid convergence. The final results on the validation set are summarized in the table below:
+
+\begin{table}[H]
+\centering
+\caption{Model Performance across Epochs}
+\begin{tabular}{@{}ccc@{}}
+\toprule
+\textbf{Epoch} & \textbf{Training Loss} & \textbf{Val Dice Score} \\ \midrule
+1              & 0.1223                 & 0.9156                  \\
+2              & 0.0437                 & 0.9486                  \\
+3              & 0.0333                 & 0.9572                  \\
+4              & 0.0298                 & 0.9623                  \\
+5              & \textbf{0.0282}        & \textbf{0.9656}         \\ \bottomrule
+\end{tabular}
+\end{table}
+
+The final Dice Coefficient of \textbf{0.9656} indicates a high degree of overlap between the predicted segmentation and the expert-annotated ground truth. The low training loss (0.0282) further confirms the effectiveness of the Adam optimizer and BCELoss in guiding the model toward optimal weights.
+\begin{figure} [H]
+    \centering
+    \includegraphics[width=0.88\linewidth]{images/plots.png}
+    \caption{training and validation}
+    \label{fig:placeholder}
+\end{figure}
+
+\subsection{Qualitative Analysis}
+The final results showed that the model I chose was successful in capturing the morphological features of the lungs. The details were almost completely covered. Accurate with pre-labeled images.
+\begin{figure} []
+    \centering
+    \includegraphics[width=0.89\linewidth]{images/output_2.png}
+    \caption{Final result}
+    \label{fig:placeholder}
+\end{figure}
+
+
+\section{Conclusion}
+In this practical exercise, i successfully implemented a U-Net-based deep learning framework for the automated segmentation of COVID-19 infection areas in chest X-ray images. By leveraging the COVID-QU-Ex dataset and applying rigorous preprocessing—including normalization and resizing—the model achieved an outstanding Validation 96\%.
+
+\begin{thebibliography}{99}
+
+\bibitem{pmc_imaging}
+Rubin, G. D., et al. (2020). "The Role of Chest Imaging in the Diagnosis, Management, and Monitoring of Coronavirus Disease 2019 (COVID-19): A Multinational Consensus Statement from the Fleischner Society." \textit{Radiology}, 296(3), 172-183. PMC7154032.
+Available:\url{https://pmc.ncbi.nlm.nih.gov/articles/PMC8561360}
+\bibitem{covid_qu_ex}
+Tahir, A. M., et al. "COVID-QU-Ex Dataset: Chest X-ray Images and Ground-truth Masks for COVID-19 Infection Segmentation." \textit{Kaggle}. [Online]. Available: \url{https://www.kaggle.com/datasets/anasmohammedtahir/covidqu}.
+\bibitem{geeksforgeeks_unet}
+GeeksforGeeks. "U-Net Architecture Explained." [Online]. Available: \url{https://www.geeksforgeeks.org/u-net-architecture-explained/}.
+
+\end{thebibliography}
+
+\end{document}
