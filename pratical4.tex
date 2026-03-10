@@ -1,0 +1,191 @@
+\documentclass[a4paper, 10pt, twocolumn]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath, amssymb}
+\usepackage{graphicx}
+\usepackage[margin=2cm]{geometry}
+\usepackage{hyperref}
+\usepackage{float}
+\usepackage{booktabs} 
+
+
+\title{\textbf{Volumetric (3D) Detection of Pulmonary Nodules from CT Images using a 3D Convolutional Neural Network}}
+
+\author{
+    Doan Duy Thanh \\
+    Student ID: 22BA13286 \\
+    Lecturer: Tran Giang Son \\
+    University of Science and Technology of Hanoi (USTH) \\
+    Email: thanh.dd22ba13286@usth.edu.vn
+}
+\date{}
+
+
+\begin{document}
+\maketitle 
+\section{Abstract}
+It's summarizing the entire project: the problem (detecting lung nodules in 3D CT scans), the dataset used LUNA16, the method applied 3D CNN, and a brief mention of the final evaluation metrics.
+
+
+
+
+
+\section{Introduction}
+Deep convolutional neural networks (CNNs) form the backbone of many state-of-the-art computer vision systems for classification and segmentation of 2D images. The same principles and architectures for volumetric data such as CT scans. In this pratical, i train a 3D CNN for automatic detection of pulmonary nodules in chest CT images volumes of interest extracted from the LUNA16 dataset\cite{shen2017cnn}
+
+
+
+\section{EDA}
+\subsection{Explore the data}
+The data for this practical is LUNA16 in Kaggle \cite{luna16}. 
+The LIDC/IDRI database, released under a Creative Commons Attribution 3.0 License, contains 888 CT scans. 
+Annotations were collected in two phases by four radiologists, who classified findings as non-nodule, nodule $< 3$ mm, or nodule $\geq 3$ mm. 
+The reference standard includes nodules $\geq 3$ mm accepted by at least three radiologists, while other findings are considered irrelevant and listed in the evaluation.
+the data LUNA16 have  5 subset, in this report we were choose 2 subset for explore and visualize. Total annotated nodules: 1186 nodules in lung, The LUNA16 dataset provides detailed information about lung nodules through the file annotations.csv. Each row in the file corresponds to a nodule, defined by the coordinates of its center 
+(X,Y,Z) and its associated diameter.
+
+
+
+\subsection{Visualization data}
+\begin{figure} [h]
+    \centering
+    \includegraphics[width=0.68\linewidth]{output.png}
+    \caption{Distribution of Nodule Diameters}
+    \label{fig:placeholder}
+\end{figure}
+The graph shows a right-skewed distribution in figure 1. The majority of the nodules are very small, concentrated in the 5mm to 10mm range. The number of nodules decreases as their size increases, and nodules with a diameter exceeding 25mm are very rare.
+\begin{figure} [h]
+    \centering
+    \includegraphics[width=0.5\linewidth]{output2.png}
+    \caption{16 Evenly Space Slices of 3D scan}
+    \label{fig:ct_slices}
+\end{figure}
+
+This figure displays 16 evenly spaced axial slices of a 3D CT scan, ranging from Slice $Z=0$ to $Z=420$. The transition from the upper abdomen to the thoracic cavity is clearly visible. Lungs appear as low-density (dark) regions starting around Slice $Z=112$. This visualization confirms the volumetric nature of the LUNA16 dataset and helps in understanding the anatomical context where pulmonary nodules are located.
+\section{Methodology}
+
+\subsection{3D Preprocessing}
+The data preprocessing pipeline plays a crucial role in standardizing data from various CT scanners and preparing optimal inputs for the neural network.
+
+\subsubsection{Coordinate Transformation}
+Label data in the LUNA16 dataset is provided in physical coordinates. To extract volumetric patches from the image matrix, these coordinates must be converted into Voxel Indices based on the Origin and Spacing information from the .mhd file metadata:
+\begin{equation}
+Voxel_{coord} = \left\lfloor \frac{|World_{coord} - Origin|}{Spacing} \right\rfloor
+\end{equation}
+Where $Origin$ is the 3D coordinate of the first voxel and $Spacing$ is the physical size of a single voxel across the three dimensions $(x, y, z)$.
+
+\subsubsection{Lung Windowing and Normalization}
+Pixel values in CT scans are measured in Hounsfield Units (HU), reflecting material density. To focus on lung tissue and pulmonary nodules, the Lung Windowing technique is applied by clipping the HU values to a range of $[-1000, 400]$. This removes irrelevant high-density components such as bones or low-density noise. Subsequently, the data is normalized to the $[0, 1]$ range to accelerate the model's convergence rate.
+
+\subsubsection{3D Patch Extraction}
+Based on the analysis of nodule diameter distribution, cubic patches of $32 \times 32 \times 32$ voxels are extracted around the center coordinates. For nodules located near the image boundaries, constant padding with a value of $-1000$ (equivalent to air density) is used to ensure uniform input dimensions.
+
+\subsection{Data for training}
+To evaluate the model's generalization capability, the dataset is divided into $70\%$ Training, $15\%$ Validation, and $15\%$ Testing sets.Train nodules: $819$, 
+validation nodules: $166$, 
+test nodules: $201$ 
+\begin{itemize}
+    \item \textbf{Patient-Based Splitting:} The split is performed based on the patient identifier (\textit{seriesuid}) rather than individual nodules.
+    \item \textbf{Data Leakage Prevention:} This approach ensures that nodules from the same patient do not appear simultaneously across different sets, preventing the model from learning patient-specific anatomical features instead of generalized pathological characteristics.
+\end{itemize}
+
+\subsection{3D Convolutional Neural Network Architecture}
+The \textit{NoduleDetector3D} model is designed to process 3D volumetric input data with dimensions of $(1, 32, 32, 32)$.
+
+\subsubsection{3D CNN Architecture}
+
+\begin{figure} [H]
+    \centering
+    \includegraphics[width=0.78\linewidth]{licensed-image.png}
+    \caption{3D CNN Architecture}
+    \label{fig:placeholder}
+\end{figure}
+
+\subsubsection{Classification Head}
+Following the convolutional layers, the output features with dimensions of $(64, 4, 4, 4)$ are flattened into a 4096-dimensional vector and passed through fully connected layers:
+\begin{itemize}
+    \item \textbf{Fully Connected 1:} $Linear(4096 \to 128)$ combined with $Dropout(0.5)$ to prevent overfitting.
+    \item \textbf{Output Layer:} $Linear(128 \to 1)$ using a $Sigmoid$ activation function to predict the probability of the input sample being a nodule.
+\end{itemize}
+We using the Binary Cross Entropy (BCE) loss function and the Adam optimizer with a learning rate of $1 \times 10^{-4}$.
+\section{Results and Discussion}
+
+\subsection{Training Performance}
+Model was trained for 5 epochs to demonstrate.At the end of the training phase, the Average Binary Cross Entropy (BCE) Loss reached 0.6726. For a binary classification task, a random guessing model yields a BCE loss of approximately $0.693$ ($-\ln(0.5)$). The reduction to 0.6726 indicates that the model has initiated the learning process and started to capture basic volumetric features, though it remains in an underfitted state due to the highly constrained number of training epochs.
+
+\subsection{Quantitative Evaluation}
+We evaluated on the test set comprising 395 3D patches (195 negative and 200 positive samples). The overall accuracy achieved was 51.14\%. While the global accuracy appears equivalent to random classification, a deeper analysis of the classification report and confusion matrix reveals a strong predictive bias.
+
+\begin{table}[h!]
+\centering
+\caption{Classification Report on the Test Set}
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{Class} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} & \textbf{Support} \\ \hline
+Negative (0) & 0.52 & 0.12 & 0.19 & 195 \\ \hline
+Positive (1) & 0.51 & 0.90 & 0.65 & 200 \\ \hline
+\end{tabular}
+\end{table}
+
+The confusion matrix shows:
+\begin{itemize}
+    \item \textbf{True Positives (TP):} 179
+    \item \textbf{False Positives (FP):} 172
+    \item \textbf{True Negatives (TN):} 23
+    \item \textbf{False Negatives (FN):} 21
+\end{itemize}
+
+\subsection{Discussion}
+The most prominent characteristic of the current model is its high sensitivity towards the positive class. \begin{itemize}
+    \item \textbf{High Recall for Nodules (90\%):} The model successfully detected 179 out of 200 actual nodules. In the medical domain, maximizing recall (sensitivity) is the highest priority, as False Negatives (missing a malignant tumor) carry severe clinical consequences. 
+    \item \textbf{High False Positive Rate:} The precision for the positive class is low (51\%). The model heavily over-predicts the positive class, misclassifying 172 non-nodule patches as nodules. The recall for the negative class is critically low at 12\%.
+\end{itemize}
+\section{Conclusion}
+
+This practical successfully established a 3D CNN pipeline for lung nodule detection using the LUNA16 dataset. The model achieved a high recall of 90\%, demonstrating strong potential in identifying pulmonary nodules, although the overall accuracy (51.14\%) was limited by underfitting due to the short training duration. Future improvements will focus on extended training and 3D data augmentation to enhance diagnostic precision and reduce false positives.
+
+
+
+
+
+
+\begin{thebibliography}{99}
+
+\bibitem{shen2017cnn}
+W. Shen, M. Zhou, F. Yang, D. Yang, and J. Tian (2017). 
+\textit{Multi-scale Convolutional Neural Networks for Lung Nodule Classification}. 
+Neurocomputing, 197, 150--157. 
+doi:10.1016/j.neucom.2016.01.007. 
+Available at: \url{https://pmc.ncbi.nlm.nih.gov/articles/PMC5568782/}
+
+\bibitem{luna16}
+A. V. C. (2016). 
+\textit{LUNA16: Lung Nodule Analysis 2016 Dataset}. 
+Kaggle. Available at: \url{https://www.kaggle.com/datasets/avc0706/luna16}
+
+\end{thebibliography}
+
+ 
+\maketitle 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\end{document}
